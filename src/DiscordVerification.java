@@ -12,19 +12,38 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.security.auth.login.LoginException;
 
+import java.io.*;
 import java.sql.*;
 import java.util.List;
 
 public class DiscordVerification extends ListenerAdapter {
     
     private static String [] arr = null;
+    private static String username,password,database,dataname,datapass = null;
 	int numb = 1;
 	
 	public static void main(String[] args) {
+        String fileName = "D://User.txt";
+        try {
+            FileReader fileReader = new FileReader(fileName);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            username = bufferedReader.readLine();
+            password = bufferedReader.readLine();
+            database = bufferedReader.readLine();
+            dataname = bufferedReader.readLine();
+            datapass = bufferedReader.readLine();
+            bufferedReader.close();         
+        }
+        catch(FileNotFoundException ex) {
+            System.out.println("Unable to open file '" + fileName + "'");
+        }
+        catch(IOException ex) {
+            System.out.println("Error reading file '" + fileName + "'");
+        }
         try {
             new JDABuilder()
-                    .setEmail("treasurer@egg.org.au")
-                    .setPassword("3ggp4ss")
+                    .setEmail(username)
+                    .setPassword(password)
                     .addListener(new DiscordVerification())
                     .buildBlocking();
         }
@@ -41,10 +60,8 @@ public class DiscordVerification extends ListenerAdapter {
 	
 	@Override
 	public void onReady(ReadyEvent event) {
-		//event.getJDA().getAccountManager().setUsername("EggBot");
-		//event.getJDA().getAccountManager().update();
 		event.getJDA().getAccountManager().setGame("self coding");
-		event.getJDA().getAccountManager().setIdle(false);;
+		event.getJDA().getAccountManager().setIdle(false);
 	}
 	
 	@Override
@@ -86,7 +103,6 @@ public class DiscordVerification extends ListenerAdapter {
     			checkstatus(event, tchannel);
     		}
     	}
-    	
     }
     
     private void checkstatus(GuildMessageReceivedEvent event, TextChannel tchannel) { //R:Verified(151237758457741312)
@@ -120,7 +136,7 @@ public class DiscordVerification extends ListenerAdapter {
     		System.out.println("CardID Valid");
     		if (isValidEmailAddress(arr[2])) {
     			System.out.println("Email Valid");
-    			String findusr = "SELECT * FROM members WHERE ID = " + arr[1];
+    			String findusr = "SELECT * FROM members WHERE contact_type = 2 AND Contact_Data = " + arr[2];
     			query(findusr, pchan);
     			System.out.println(createHash("str"));
    		} else {
@@ -143,8 +159,11 @@ public class DiscordVerification extends ListenerAdapter {
     }
     
     private void verify(PrivateChannel pchan) {
-    	//Check code stored in database/some file. If match, tick verified box or add code to database.
-    	//If not, verification failed. Please ensure that your code matches
+    	if (arr[1].matches("[0-9]+") && arr[1].length() == 8) {
+    		
+    	} else {
+    		help(pchan);
+    	}
     }
     
     private static boolean isValidEmailAddress(String email) {
@@ -158,17 +177,15 @@ public class DiscordVerification extends ListenerAdapter {
     	return result;
     }
 
-    private void query(String qry, PrivateChannel pchan) {
+    private ResultSet query(String qry, PrivateChannel pchan) {
+    	ResultSet myRs = null;
     	try{
-            Connection myConn = DriverManager.getConnection("jdbc:mysql://138.25.111.207:3306/egg", "Terra", "3ggd4t4p4ss");
+            Connection myConn = DriverManager.getConnection(database,dataname,datapass);
             PreparedStatement myStmt = myConn.prepareStatement(qry);
-            ResultSet myRs = myStmt.executeQuery(qry);
-            while (myRs.next()) {
-            	System.out.println(myRs.getString("Surname") + ", " + myRs.getString("first_name"));
-            	pchan.sendMessage(myRs.getString("Surname") + ", " + myRs.getString("first_name"));
-            }
+            myRs = myStmt.executeQuery(qry);
         } catch (Exception ex) {
         	ex.printStackTrace();
         }
+		return myRs;
     }
 }
